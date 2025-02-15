@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version libs.versions.kotlin
+    kotlin("plugin.serialization") version libs.versions.kotlin
     alias(libs.plugins.shadow)
     alias(libs.plugins.pluginyml)
     alias(libs.plugins.runtask)
@@ -23,6 +24,8 @@ dependencies {
     implementation(libs.bundles.mccoroutine)
     implementation(libs.bundles.cloud)
     implementation(libs.bundles.mongodb)
+    implementation(libs.kotlin.serialization.json)
+    implementation(libs.kreds)
 }
 
 bukkit {

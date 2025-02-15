@@ -13,6 +13,7 @@ import dev.tarna.marketplace.api.utils.timedEnabled
 import dev.tarna.marketplace.commands.MarketplaceCommand
 import dev.tarna.marketplace.commands.SellCommand
 import dev.tarna.marketplace.commands.TransactionsCommand
+import io.github.crackthecodeabhi.kreds.connection.*
 import net.milkbowl.vault.economy.Economy
 import org.bson.UuidRepresentation
 import org.bukkit.plugin.java.JavaPlugin
@@ -32,6 +33,8 @@ class MarketPlacePlugin : JavaPlugin() {
         lateinit var itemsCollection: MongoCollection<MarketplaceItem>
         lateinit var transactionsCollection: MongoCollection<Transaction>
 
+        lateinit var redisClient: KredsClient
+
         lateinit var economy: Economy
         lateinit var commandManager: PaperCommandManager<Source>
     }
@@ -41,6 +44,7 @@ class MarketPlacePlugin : JavaPlugin() {
             saveDefaultConfig()
             if (!setupEconomy()) return@timedEnabled false
             setupDatabase()
+            setupRedis()
             loadCommands()
 
             Marketplace.scheduleBlackmarketRefresh()
@@ -100,6 +104,14 @@ class MarketPlacePlugin : JavaPlugin() {
             database = mongoClient.getDatabase("marketplace")
             itemsCollection = database.getCollection<MarketplaceItem>("items")
             transactionsCollection = database.getCollection<Transaction>("transactions")
+            true
+        }
+    }
+
+    private fun setupRedis() {
+        timedEnabled("Redis") {
+            val endpoint = Endpoint.from("")
+            redisClient = newClient(endpoint)
             true
         }
     }

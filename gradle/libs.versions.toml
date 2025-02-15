@@ -1,5 +1,6 @@
 [versions]
 kotlin = "2.1.20-Beta2"
+kotlinserializationjson = "1.8.0"
 shadow = "8.3.5"
 pluginyml = "0.6.0"
 runtask = "2.3.1"
@@ -10,6 +11,7 @@ mcchestuiplus = "1.5.6"
 cloud = "2.0.0"
 cloud-paper = "2.0.0-beta.10"
 mongodb = "5.3.0"
+kreds = "0.9.1"
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow"}
@@ -32,6 +34,9 @@ cloud-paper = { module = "org.incendo:cloud-paper", version.ref = "cloud-paper" 
 
 mongodb-driver = { module = "org.mongodb:mongodb-driver-kotlin-coroutine", version.ref = "mongodb" }
 bson-kotlinx = { module = "org.mongodb:bson-kotlinx", version.ref = "mongodb" }
+kotlin-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinserializationjson" }
+
+kreds = { module = "io.github.crackthecodeabhi:kreds", version.ref = "kreds" }
 
 [bundles]
 mccoroutine = ["mccoroutine-api", "mccoroutine-core"]
