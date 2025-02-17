@@ -34,13 +34,29 @@ object Marketplace {
         Economy.remove(buyer, if (marketplaceItem.blackmarket) marketplaceItem.price / 2 else marketplaceItem.price)
         Economy.add(seller, if (marketplaceItem.blackmarket) marketplaceItem.price * 2 else marketplaceItem.price)
         itemsCollection.deleteOne(eq("id", marketplaceItem.id))
-        transactionsCollection.insertOne(Transaction(
+        val transaction = Transaction(
             seller = seller.uniqueId,
             buyer = buyer.uniqueId,
             serializedItem = marketplaceItem.serializedItem,
             price = marketplaceItem.price,
             blackmarket = marketplaceItem.blackmarket
-        ))
+        )
+        transactionsCollection.insertOne(transaction)
+
+        val buyerCache = redis.get("transactions:buyer:${buyer.uniqueId}")
+        if (buyerCache != null) {
+            val buyerData = Json.decodeFromString<MutableList<Transaction>>(buyerCache)
+            buyerData.add(transaction)
+            redis.set("transactions:buyer:${buyer.uniqueId}", Json.encodeToString(buyerData))
+        }
+
+        val sellerCache = redis.get("transactions:seller:${seller.uniqueId}")
+        if (sellerCache != null) {
+            val sellerData = Json.decodeFromString<MutableList<Transaction>>(sellerCache)
+            sellerData.add(transaction)
+            redis.set("transactions:seller:${seller.uniqueId}", Json.encodeToString(sellerData))
+        }
+
         val item = marketplaceItem.item ?: return
         buyer.give(item)
     }
@@ -66,5 +82,11 @@ object Marketplace {
                 set("blackmarket", true)
             )
         }
+
+        redis.del("marketplace:true")
+        redis.del("marketplace:false")
+
+        getItems(true)
+        getItems(false)
     }
 }
