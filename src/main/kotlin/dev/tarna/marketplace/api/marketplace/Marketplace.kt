@@ -42,6 +42,7 @@ object Marketplace {
             blackmarket = marketplaceItem.blackmarket
         )
         transactionsCollection.insertOne(transaction)
+        transaction.log()
 
         val buyerCache = redis.get("transactions:buyer:${buyer.uniqueId}")
         if (buyerCache != null) {

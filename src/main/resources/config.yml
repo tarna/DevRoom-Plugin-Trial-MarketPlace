@@ -1,0 +1,8 @@
+# The URI of the MongoDB database
+mongo-url: ""
+
+# The URI of the Redis instance
+redis-url: ""
+
+# The Discord webhook URL for transaction logs
+webhook-url: ""

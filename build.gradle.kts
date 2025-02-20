@@ -26,6 +26,7 @@ dependencies {
     implementation(libs.bundles.mongodb)
     implementation(libs.kotlin.serialization.json)
     implementation(libs.kreds)
+    implementation(libs.discordwebhook)
 }
 
 bukkit {

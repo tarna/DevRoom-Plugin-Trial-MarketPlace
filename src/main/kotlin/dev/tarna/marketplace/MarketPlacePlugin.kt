@@ -1,5 +1,6 @@
 package dev.tarna.marketplace
 
+import club.minnced.discord.webhook.WebhookClient
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings
 import com.mongodb.kotlin.client.coroutine.MongoClient
@@ -34,6 +35,7 @@ class MarketPlacePlugin : JavaPlugin() {
         lateinit var transactionsCollection: MongoCollection<Transaction>
 
         lateinit var redisClient: KredsClient
+        lateinit var webhookClient: WebhookClient
 
         lateinit var economy: Economy
         lateinit var commandManager: PaperCommandManager<Source>
@@ -45,6 +47,7 @@ class MarketPlacePlugin : JavaPlugin() {
             if (!setupEconomy()) return@timedEnabled false
             setupDatabase()
             setupRedis()
+            setupWebhook()
             loadCommands()
 
             Marketplace.scheduleBlackmarketRefresh()
@@ -94,9 +97,14 @@ class MarketPlacePlugin : JavaPlugin() {
 
     private fun setupDatabase() {
         timedEnabled("Mongo Database") {
+            val mongoUrl = config.getString("mongo-url") ?: run {
+                logger.severe("Mongo URL not found in config! Disabling plugin.")
+                server.pluginManager.disablePlugin(this)
+                return
+            }
             mongoClient = MongoClient.create(
                 MongoClientSettings.builder()
-                    .applyConnectionString(ConnectionString(""))
+                    .applyConnectionString(ConnectionString(mongoUrl))
                     .uuidRepresentation(UuidRepresentation.STANDARD)
                     .build()
             )
@@ -110,8 +118,25 @@ class MarketPlacePlugin : JavaPlugin() {
 
     private fun setupRedis() {
         timedEnabled("Redis") {
-            val endpoint = Endpoint.from("")
+            val redisUrl = config.getString("redis-url") ?: run {
+                logger.severe("Redis URL not found in config! Disabling plugin.")
+                server.pluginManager.disablePlugin(this)
+                return
+            }
+            val endpoint = Endpoint.from(redisUrl)
             redisClient = newClient(endpoint)
+            true
+        }
+    }
+
+    private fun setupWebhook() {
+        timedEnabled("Webhook") {
+            val webhookUrl = config.getString("webhook-url") ?: run {
+                logger.severe("Webhook URL not found in config! Disabling plugin.")
+                server.pluginManager.disablePlugin(this)
+                return
+            }
+            webhookClient = WebhookClient.withUrl(webhookUrl)
             true
         }
     }
