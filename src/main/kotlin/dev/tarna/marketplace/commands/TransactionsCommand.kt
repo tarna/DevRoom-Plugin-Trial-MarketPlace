@@ -5,25 +5,26 @@ import dev.tarna.marketplace.api.commands.BaseCommand
 import dev.tarna.marketplace.api.database.models.Transaction
 import dev.tarna.marketplace.api.marketplace.Transactions
 import dev.tarna.marketplace.api.utils.not
+import dev.tarna.marketplace.api.utils.openGUISync
 import dev.tarna.marketplace.api.utils.player
 import me.tech.mcchestui.GUI
 import me.tech.mcchestui.GUIType
 import me.tech.mcchestui.item.item
 import me.tech.mcchestui.utils.gui
-import me.tech.mcchestui.utils.openGUI
 import org.bukkit.Material
-import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.annotations.Permission
+import org.incendo.cloud.paper.util.sender.PlayerSource
 
 class TransactionsCommand : BaseCommand() {
     @Command("transactions")
     @Permission("marketplace.transactions")
     @CommandDescription("View your transactions.")
-    fun transactions(player: Player) {
-        player.openGUI(mainTransactionsGUI())
+    fun transactions(player: PlayerSource) {
+        val player = player.source()
+        player.openGUISync(mainTransactionsGUI())
     }
 
     private fun mainTransactionsGUI(): GUI {
@@ -42,7 +43,7 @@ class TransactionsCommand : BaseCommand() {
                 onClick {
                     plugin.launch {
                         val transactions = Transactions.getSellerTransactions(it)
-                        it.openGUI(transactionsGUI(transactions))
+                        it.openGUISync(transactionsGUI(transactions))
                     }
                 }
             }
@@ -55,7 +56,7 @@ class TransactionsCommand : BaseCommand() {
                 onClick {
                     plugin.launch {
                         val transactions = Transactions.getBuyerTransactions(it)
-                        it.openGUI(transactionsGUI(transactions))
+                        it.openGUISync(transactionsGUI(transactions))
                     }
                 }
             }
@@ -92,7 +93,7 @@ class TransactionsCommand : BaseCommand() {
                     }
 
                     onClick {
-                        it.openGUI(transactionsGUI(transactions, page - 1))
+                        it.openGUISync(transactionsGUI(transactions, page - 1))
                     }
                 }
             }
@@ -104,7 +105,7 @@ class TransactionsCommand : BaseCommand() {
                     }
 
                     onClick {
-                        it.openGUI(transactionsGUI(transactions, page + 1))
+                        it.openGUISync(transactionsGUI(transactions, page + 1))
                     }
                 }
             }

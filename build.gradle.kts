@@ -40,6 +40,9 @@ bukkit {
         "com.github.shynixn.mccoroutine:mccoroutine-bukkit-api:2.21.0",
         "com.github.shynixn.mccoroutine:mccoroutine-bukkit-core:2.21.0"
     )
+    depend = listOf(
+        "Vault"
+    )
 }
 
 val targetJavaVersion = 21
@@ -63,5 +66,6 @@ tasks {
 
     runServer {
         minecraftVersion("1.21")
+        jvmArgs("-DPaper.IgnoreJavaVersion=true", "-Dcom.mojang.eula.agree=true")
     }
 }

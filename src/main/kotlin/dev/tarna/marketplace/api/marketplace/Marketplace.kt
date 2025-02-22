@@ -6,6 +6,7 @@ import com.mongodb.client.model.Updates.set
 import dev.tarna.marketplace.MarketPlacePlugin
 import dev.tarna.marketplace.api.database.models.MarketplaceItem
 import dev.tarna.marketplace.api.database.models.Transaction
+import dev.tarna.marketplace.api.utils.serializeItem
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 import org.bukkit.Bukkit
@@ -17,7 +18,39 @@ object Marketplace {
     private val plugin = MarketPlacePlugin.instance
     private val redis = MarketPlacePlugin.redisClient
     private val itemsCollection = MarketPlacePlugin.itemsCollection
-    private val transactionsCollection = MarketPlacePlugin.transactionsCollection
+
+    suspend fun sell(player: Player, price: Double) {
+        val item = player.inventory.itemInMainHand
+        itemsCollection.insertOne(
+            MarketplaceItem(
+                seller = player.uniqueId,
+                serializedItem = serializeItem(item),
+                price = price
+            )
+        )
+        player.inventory.setItemInMainHand(null)
+
+        val cache = redis.get("marketplace:false")
+        if (cache != null) {
+            val data = Json.decodeFromString<MutableList<MarketplaceItem>>(cache)
+            data.add(
+                MarketplaceItem(
+                    seller = player.uniqueId,
+                    serializedItem = serializeItem(item),
+                    price = price
+                )
+            )
+            redis.set("marketplace:false", Json.encodeToString(data))
+        } else {
+            redis.set("marketplace:false", Json.encodeToString(listOf(
+                MarketplaceItem(
+                    seller = player.uniqueId,
+                    serializedItem = serializeItem(item),
+                    price = price
+                )
+            )))
+        }
+    }
 
     suspend fun getItems(blackmarket: Boolean = false): List<MarketplaceItem> {
         val cached = redis.get("marketplace:$blackmarket")
@@ -34,6 +67,18 @@ object Marketplace {
         Economy.remove(buyer, if (marketplaceItem.blackmarket) marketplaceItem.price / 2 else marketplaceItem.price)
         Economy.add(seller, if (marketplaceItem.blackmarket) marketplaceItem.price * 2 else marketplaceItem.price)
         itemsCollection.deleteOne(eq("id", marketplaceItem.id))
+
+        val itemsCache = redis.get("marketplace:${marketplaceItem.blackmarket}")
+        if (itemsCache != null) {
+            val data = Json.decodeFromString<MutableList<MarketplaceItem>>(itemsCache)
+            data.remove(marketplaceItem)
+            redis.set("marketplace:${marketplaceItem.blackmarket}", Json.encodeToString(data))
+        } else {
+            val data = getItems(marketplaceItem.blackmarket).toMutableList()
+            data.remove(marketplaceItem)
+            redis.set("marketplace:${marketplaceItem.blackmarket}", Json.encodeToString(data))
+        }
+
         val transaction = Transaction(
             seller = seller.uniqueId,
             buyer = buyer.uniqueId,
@@ -41,25 +86,11 @@ object Marketplace {
             price = marketplaceItem.price,
             blackmarket = marketplaceItem.blackmarket
         )
-        transactionsCollection.insertOne(transaction)
         transaction.log()
-
-        val buyerCache = redis.get("transactions:buyer:${buyer.uniqueId}")
-        if (buyerCache != null) {
-            val buyerData = Json.decodeFromString<MutableList<Transaction>>(buyerCache)
-            buyerData.add(transaction)
-            redis.set("transactions:buyer:${buyer.uniqueId}", Json.encodeToString(buyerData))
-        }
-
-        val sellerCache = redis.get("transactions:seller:${seller.uniqueId}")
-        if (sellerCache != null) {
-            val sellerData = Json.decodeFromString<MutableList<Transaction>>(sellerCache)
-            sellerData.add(transaction)
-            redis.set("transactions:seller:${seller.uniqueId}", Json.encodeToString(sellerData))
-        }
+        Transactions.storeTransaction(transaction)
 
         val item = marketplaceItem.item ?: return
-        buyer.give(item)
+        buyer.inventory.addItem(item)
     }
 
     fun scheduleBlackmarketRefresh() {
@@ -76,10 +107,12 @@ object Marketplace {
             set("blackmarket", false)
         )
 
-        val randomItems = getItems().shuffled().take(7)
+        val items = getItems().shuffled()
+        val size = items.size
+        val randomItems = getItems().shuffled().take(if (size > 7) 7 else size)
         for (item in randomItems) {
             itemsCollection.updateOne(
-                eq("id", item.id),
+                eq("id", item.id.toString()),
                 set("blackmarket", true)
             )
         }

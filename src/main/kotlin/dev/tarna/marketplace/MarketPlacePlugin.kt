@@ -123,7 +123,8 @@ class MarketPlacePlugin : JavaPlugin() {
                 server.pluginManager.disablePlugin(this)
                 return
             }
-            val endpoint = Endpoint.from(redisUrl)
+//            val endpoint = Endpoint.from(redisUrl)
+            val endpoint = Endpoint("localhost", 6379)
             redisClient = newClient(endpoint)
             true
         }

@@ -1,32 +1,23 @@
 package dev.tarna.marketplace.commands
 
 import dev.tarna.marketplace.api.commands.BaseCommand
-import dev.tarna.marketplace.api.database.models.MarketplaceItem
-import dev.tarna.marketplace.api.utils.serializeItem
-import org.bukkit.entity.Player
+import dev.tarna.marketplace.api.marketplace.Marketplace
 import org.incendo.cloud.annotations.Argument
 import org.incendo.cloud.annotations.Command
 import org.incendo.cloud.annotations.CommandDescription
 import org.incendo.cloud.annotations.Permission
+import org.incendo.cloud.paper.util.sender.PlayerSource
 
 class SellCommand : BaseCommand() {
-    @Command("sell")
+    @Command("sell <price>")
     @Permission("marketplace.sell")
     @CommandDescription("Sell an item on the marketplace.")
     suspend fun sell(
-        player: Player,
+        player: PlayerSource,
         @Argument("price") price: Double
     ) {
-        val item = player.inventory.itemInMainHand
+        val player = player.source()
 
-        itemCollection.insertOne(
-            MarketplaceItem(
-                seller = player.uniqueId,
-                serializedItem = serializeItem(item),
-                price = price
-            )
-        )
-
-        player.inventory.setItemInMainHand(null)
+        Marketplace.sell(player, price)
     }
 }

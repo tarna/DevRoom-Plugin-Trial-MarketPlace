@@ -11,6 +11,28 @@ object Transactions {
     private val transactionsCollection = MarketPlacePlugin.transactionsCollection
     private val redis = MarketPlacePlugin.redisClient
 
+    suspend fun storeTransaction(transaction: Transaction) {
+        transactionsCollection.insertOne(transaction)
+
+        val buyerCache = redis.get("transactions:buyer:${transaction.buyer}")
+        if (buyerCache != null) {
+            val data = Json.decodeFromString<MutableList<Transaction>>(buyerCache)
+            data.add(transaction)
+            redis.set("transactions:buyer:${transaction.buyer}", Json.encodeToString(data))
+        } else {
+            redis.set("transactions:buyer:${transaction.buyer}", Json.encodeToString(listOf(transaction)))
+        }
+
+        val sellerCache = redis.get("transactions:seller:${transaction.seller}")
+        if (sellerCache != null) {
+            val data = Json.decodeFromString<MutableList<Transaction>>(sellerCache)
+            data.add(transaction)
+            redis.set("transactions:seller:${transaction.seller}", Json.encodeToString(data))
+        } else {
+            redis.set("transactions:seller:${transaction.seller}", Json.encodeToString(listOf(transaction)))
+        }
+    }
+
     suspend fun getBuyerTransactions(player: Player): List<Transaction> {
         val cached = redis.get("transactions:buyer:${player.uniqueId}")
         if (cached != null) return Json.decodeFromString(cached)
